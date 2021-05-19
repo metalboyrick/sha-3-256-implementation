@@ -1,0 +1,6 @@
+# compiler outputs
+*.o
+*.out
+*.exe
+*.exe.stackdump
+*.txt
