@@ -8,4 +8,6 @@
 #include <stdbool.h>
 #include <time.h>
 
+extern void get_hash(char* ptext);
+
 #endif // SHA_H
