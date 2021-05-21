@@ -28,8 +28,10 @@ void set_bit_pos(int val, int pos, uint8_t *arr)
 		arr[pos / 8] &= ~(1 << (7 - bit_pos));
 }
 
-void reverse_endian(uint8_t* lane){
-	for(int i = 0; i < 4; i++){
+void reverse_endian(uint8_t *lane)
+{
+	for (int i = 0; i < 4; i++)
+	{
 		uint8_t temp = lane[i];
 		lane[i] = lane[7 - i];
 		lane[7 - i] = temp;
@@ -43,22 +45,22 @@ void reverse_endian(uint8_t* lane){
 	@param (int z) z-coordinates
 	@return(uint8_t) the value in the state array.
 */
-uint8_t get_cube_pt(int x, int y, int z)
+uint8_t get_cube_pt(int x, int y, int z,  uint8_t* arr)
 {
 	// z = DEPTH - z;
 	static int w = (STATE_SIZE * 8) / 25;
 	int arr_index = (w * ((5 * y) + x)) + z;
 
-	return get_bit_pos(arr_index, state);
+	return get_bit_pos(arr_index, arr);
 }
 
-void set_cube_pt(int val, int x, int y, int z)
+void set_cube_pt(int val, int x, int y, int z, uint8_t* arr)
 {
 	// z = DEPTH - z;
 	static int w = (STATE_SIZE * 8) / 25;
 	int arr_index = (w * ((5 * y) + x)) + z;
 
-	set_bit_pos(val, arr_index, state);
+	set_bit_pos(val, arr_index, arr);
 }
 
 /*
@@ -100,13 +102,14 @@ void theta()
 	for (int x = 0; x < 5; x++)
 		for (int z = 0; z < DEPTH; z++)
 		{
-			C[x][z] = get_cube_pt(x, 0, z);
+			C[x][z] = get_cube_pt(x, 0, z, state);
 			for (int y = 1; y < 5; y++)
-				C[x][z] ^= get_cube_pt(x, y, z);
+				C[x][z] ^= get_cube_pt(x, y, z, state);
 		}
 
-	for(int x = 0; x < 5; x++)
-		for (int z = 0; z < DEPTH; z++){
+	for (int x = 0; x < 5; x++)
+		for (int z = 0; z < DEPTH; z++)
+		{
 			printf("%01x", C[x][z]);
 		}
 
@@ -119,16 +122,64 @@ void theta()
 			D[x][z] = C[(x - 1) % 5][z] ^ C[(x + 1) % 5][(z + 1) % DEPTH];
 			for (int y = 0; y < 5; y++)
 			{
-				int current_val = get_cube_pt(x, y, z);
-				set_cube_pt(current_val ^ D[x][z], x, y, z);
+				int current_val = get_cube_pt(x, y, z, state);
+				set_cube_pt(current_val ^ D[x][z], x, y, z, state);
 			}
 		}
 
-	for(int x = 0; x < 5; x++)
-		for (int z = 0; z < DEPTH; z++){
+	for (int x = 0; x < 5; x++)
+		for (int z = 0; z < DEPTH; z++)
+		{
 			printf("%01x", D[x][z]);
 		}
 	printf("\n\n");
+}
+
+void rho()
+{
+	int x = 1;
+	int y = 0;
+
+	uint8_t temp_arr[STATE_SIZE] = {0};
+
+	for(int z = 0; z < DEPTH; z++){
+		int current_val = get_cube_pt(0, 0, z, state);
+		set_cube_pt(current_val, 0, 0, z, temp_arr);
+	}
+
+	for (int t = 0; t < 24; t++)
+	{
+		for (int z = 0; z < DEPTH; z++)
+		{
+			int current_val = get_cube_pt(x, y, (z + (t + 1) * (t + 2) / 2) % DEPTH, state);
+			set_cube_pt(current_val, x, y, z, temp_arr);
+		}
+		int temp = y;
+		y = (3 * y + 2 * x) % 5;
+		x = temp;
+	}
+
+	for(int i = 0 ;  i < STATE_SIZE; i++){
+		state[i] = temp_arr[i];
+	}
+}
+
+void pi()
+{
+
+	uint8_t temp_arr[STATE_SIZE] = {0};
+
+	for (int x = 0; x < 5; x++)
+		for (int y = 0; y < 5; y++)
+			for (int z = 0; z < DEPTH; z++)
+			{
+				int current_val = get_cube_pt((x + 3 * y) % 5, x, z, state);
+				set_cube_pt(current_val, x, y, z, temp_arr);
+			}
+	
+	for(int i = 0 ;  i < STATE_SIZE; i++){
+		state[i] = temp_arr[i];
+	}
 }
 
 void init(char *ptext)
@@ -158,22 +209,18 @@ void get_hash(char *ptext)
 	uint8_t *current_block = input;
 	uint8_t *current_block_2 = input;
 
-	for(int i = 0; i < RATE_LEN / 8; i++){
+	for (int i = 0; i < RATE_LEN / 8; i++)
+	{
 		current_block_2 = input + 8 * i;
 		reverse_endian(current_block_2);
 	}
 
-
 	xor_rate(current_block);
 
-	
-
 	theta();
+	rho();
+	pi();
 
 	for (int i = 0; i < STATE_SIZE; i++)
 		printf("%02x ", state[i]);
-
-	
-
-	
 }
