@@ -1,25 +1,39 @@
 #include "sha.h"
 
 // ALL LENGTHS IN BYTES
-#define RATE_LEN 136		
+#define RATE_LEN 136
 #define CAPACITY_LEN 64
 #define OUTPUT_LEN 32
 #define STATE_SIZE 200
+#define DEPTH 64
+#define BLANK 0
 
 uint8_t state[STATE_SIZE] = {0};
 uint8_t input[16000] = {0};
 
-uint8_t get_bit_pos(int pos, uint8_t* arr){
+uint8_t get_bit_pos(int pos, uint8_t *arr)
+{
 	int arr_val = arr[pos / 8];
 	int bit_pos = pos % 8;
 	return (uint8_t)(((arr_val << bit_pos) & 0x80) >> 7);
 }
 
-void set_bit_pos(int val ,int pos,  uint8_t* arr){
+void set_bit_pos(int val, int pos, uint8_t *arr)
+{
 	int arr_val = arr[pos / 8];
 	int bit_pos = pos % 8;
-	if (val == 1) arr[pos / 8] |= 1 << (7 - bit_pos);
-	else arr[pos / 8] &= ~(1 << (7 - bit_pos));
+	if (val == 1)
+		arr[pos / 8] |= 1 << (7 - bit_pos);
+	else
+		arr[pos / 8] &= ~(1 << (7 - bit_pos));
+}
+
+void reverse_endian(uint8_t* lane){
+	for(int i = 0; i < 4; i++){
+		uint8_t temp = lane[i];
+		lane[i] = lane[7 - i];
+		lane[7 - i] = temp;
+	}
 }
 
 /*
@@ -29,11 +43,22 @@ void set_bit_pos(int val ,int pos,  uint8_t* arr){
 	@param (int z) z-coordinates
 	@return(uint8_t) the value in the state array.
 */
-uint8_t get_cube_pt(int x, int y, int z){
+uint8_t get_cube_pt(int x, int y, int z)
+{
+	// z = DEPTH - z;
 	static int w = (STATE_SIZE * 8) / 25;
-	int arr_index =  (w * ((5 * y) + x)) + z;
+	int arr_index = (w * ((5 * y) + x)) + z;
 
 	return get_bit_pos(arr_index, state);
+}
+
+void set_cube_pt(int val, int x, int y, int z)
+{
+	// z = DEPTH - z;
+	static int w = (STATE_SIZE * 8) / 25;
+	int arr_index = (w * ((5 * y) + x)) + z;
+
+	set_bit_pos(val, arr_index, state);
 }
 
 /*
@@ -41,8 +66,10 @@ uint8_t get_cube_pt(int x, int y, int z){
 	@param (uint8_t* current_block) current block of the plaintext
 	@param (uint8_t* state) current state array
 */
-void xor_rate(uint8_t* current_block, uint8_t* state){
-	for(int i = 0; i < RATE_LEN; i++){
+void xor_rate(uint8_t *current_block)
+{
+	for (int i = 0; i < RATE_LEN; i++)
+	{
 		state[i] ^= current_block[i];
 	}
 }
@@ -51,15 +78,102 @@ void xor_rate(uint8_t* current_block, uint8_t* state){
 	Function to perform the f-scramble
 
 */
+void theta()
+{
 
-void get_hash(char* ptext){
-	// copy the string
-	strcpy(input, ptext);
+	int C[5][DEPTH];
+	int D[5][DEPTH];
 
-	// set padded length;
-	int str_length = strlen(ptext);
-	input[str_length - 1] = 0;				// remove the \0
-	int pad_length =  str_length + (RATE_LEN -  (str_length % RATE_LEN));
+	// for(int x = 0; x < 5; x++)
+	// 	for (int z = 0; z < DEPTH; z++){
+
+	// 	}
+
+	for (int x = 0; x < 5; x++)
+		for (int z = 0; z < DEPTH; z++)
+		{
+			C[x][z] = BLANK;
+			D[x][z] = BLANK;
+		}
+
+	// populate C
+	for (int x = 0; x < 5; x++)
+		for (int z = 0; z < DEPTH; z++)
+		{
+			C[x][z] = get_cube_pt(x, 0, z);
+			for (int y = 1; y < 5; y++)
+				C[x][z] ^= get_cube_pt(x, y, z);
+		}
+
+	for(int x = 0; x < 5; x++)
+		for (int z = 0; z < DEPTH; z++){
+			printf("%01x", C[x][z]);
+		}
+
+	printf("\n\n");
+
+	// populate D
+	for (int x = 0; x < 5; x++)
+		for (int z = 0; z < DEPTH; z++)
+		{
+			D[x][z] = C[(x - 1) % 5][z] ^ C[(x + 1) % 5][(z + 1) % DEPTH];
+			for (int y = 0; y < 5; y++)
+			{
+				int current_val = get_cube_pt(x, y, z);
+				set_cube_pt(current_val ^ D[x][z], x, y, z);
+			}
+		}
+
+	for(int x = 0; x < 5; x++)
+		for (int z = 0; z < DEPTH; z++){
+			printf("%01x", D[x][z]);
+		}
+	printf("\n\n");
+}
+
+void init(char *ptext)
+{
+	int ptext_len = strlen(ptext);
+
+	strcpy((char *)input, ptext);
+
+	int pad_len = RATE_LEN - (ptext_len % RATE_LEN);
+
+	// pad appropriately
+	if (pad_len == 1)
+	{
+		input[ptext_len] = 0x86;
+	}
+	else if (pad_len > 1)
+	{
+		input[ptext_len] = 0x06;
+		input[ptext_len + pad_len - 1] = 0x80;
+	}
+}
+
+void get_hash(char *ptext)
+{
+	init(ptext);
+
+	uint8_t *current_block = input;
+	uint8_t *current_block_2 = input;
+
+	for(int i = 0; i < RATE_LEN / 8; i++){
+		current_block_2 = input + 8 * i;
+		reverse_endian(current_block_2);
+	}
 
 
+	xor_rate(current_block);
+
+	
+
+	theta();
+
+	for (int i = 0; i < STATE_SIZE; i++)
+		printf("%02x ", state[i]);
+
+	
+
+	
 }
