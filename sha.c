@@ -182,6 +182,23 @@ void pi()
 	}
 }
 
+void chi() {
+	uint8_t temp_arr[STATE_SIZE] = {0};
+
+	for(int x = 0; x < 5; x++)
+		for(int y = 0; y < 5; y++)
+			for(int z = 0; z < DEPTH; z++){
+				int op_1 = get_cube_pt(x, y, z, state);
+				int op_2 = get_cube_pt((x + 1) % 5, y, z, state) ^ 1;
+				int op_3 = get_cube_pt((x + 2) % 5, y, z, state);
+				set_cube_pt(op_1 ^ (op_2 & op_3),x, y, z, temp_arr);
+			}
+
+	for(int i = 0 ;  i < STATE_SIZE; i++){
+		state[i] = temp_arr[i];
+	}
+}
+
 void init(char *ptext)
 {
 	int ptext_len = strlen(ptext);
@@ -220,6 +237,7 @@ void get_hash(char *ptext)
 	theta();
 	rho();
 	pi();
+	chi();
 
 	for (int i = 0; i < STATE_SIZE; i++)
 		printf("%02x ", state[i]);
