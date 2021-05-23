@@ -8,36 +8,35 @@
 #define DEPTH 64
 #define BLANK 0
 
-uint8_t state[STATE_SIZE] = {0};
-uint8_t input[16000] = {0};
+static uint8_t state[STATE_SIZE] = {0};
+static uint8_t input[16000] = {0};
 
 // RC table for iota function
 static const uint8_t RC_TABLE[24][8] = {
-        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}, 
-        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x82}, 
-        {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x8a},
-        {0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x00}, 
-        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x8b}, 
-        {0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01},
-        {0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x81}, 
-        {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x09}, 
-        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8a},
-        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88}, 
-        {0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x09}, 
-        {0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x0a},
-        {0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x8b}, 
-        {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8b}, 
-        {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x89},
-        {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x03}, 
-        {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x02}, 
-        {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80},
-        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x0a}, 
-        {0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x0a}, 
-        {0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x81},
-        {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80}, 
-        {0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01}, 
-        {0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x08}
-    };
+	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01},
+	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x82},
+	{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x8a},
+	{0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x00},
+	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x8b},
+	{0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01},
+	{0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x81},
+	{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x09},
+	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8a},
+	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88},
+	{0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x09},
+	{0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x0a},
+	{0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x8b},
+	{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8b},
+	{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x89},
+	{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x03},
+	{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x02},
+	{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80},
+	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x0a},
+	{0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x0a},
+	{0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x81},
+	{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80},
+	{0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01},
+	{0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x08}};
 
 uint8_t get_bit_pos(int pos, uint8_t *arr)
 {
@@ -73,20 +72,18 @@ void reverse_endian(uint8_t *lane)
 	@param (int z) z-coordinates
 	@return(uint8_t) the value in the state array.
 */
-uint8_t get_cube_pt(int x, int y, int z,  uint8_t* arr)
+uint8_t get_cube_pt(int x, int y, int z, uint8_t *arr)
 {
 	// z = DEPTH - z;
-	static int w = (STATE_SIZE * 8) / 25;
-	int arr_index = (w * ((5 * y) + x)) + z;
+	int arr_index = (DEPTH * ((5 * y) + x)) + z;
 
 	return get_bit_pos(arr_index, arr);
 }
 
-void set_cube_pt(int val, int x, int y, int z, uint8_t* arr)
+void set_cube_pt(int val, int x, int y, int z, uint8_t *arr)
 {
 	// z = DEPTH - z;
-	static int w = (STATE_SIZE * 8) / 25;
-	int arr_index = (w * ((5 * y) + x)) + z;
+	int arr_index = (DEPTH * ((5 * y) + x)) + z;
 
 	set_bit_pos(val, arr_index, arr);
 }
@@ -114,11 +111,6 @@ void theta()
 	int C[5][DEPTH];
 	int D[5][DEPTH];
 
-	// for(int x = 0; x < 5; x++)
-	// 	for (int z = 0; z < DEPTH; z++){
-
-	// 	}
-
 	for (int x = 0; x < 5; x++)
 		for (int z = 0; z < DEPTH; z++)
 		{
@@ -135,32 +127,21 @@ void theta()
 				C[x][z] ^= get_cube_pt(x, y, z, state);
 		}
 
-	for (int x = 0; x < 5; x++)
-		for (int z = 0; z < DEPTH; z++)
-		{
-			printf("%01x", C[x][z]);
-		}
-
-	printf("\n\n");
-
 	// populate D
 	for (int x = 0; x < 5; x++)
 		for (int z = 0; z < DEPTH; z++)
-		{
-			D[x][z] = C[(x - 1) % 5][z] ^ C[(x + 1) % 5][(z + 1) % DEPTH];
+		{	
+
+			if (x == 0)
+				D[x][z] = C[4][z] ^ C[(x + 1) % 5][(z + 1) % DEPTH];
+			else 
+				D[x][z] = C[(x - 1) % 5][z] ^ C[(x + 1) % 5][(z + 1) % DEPTH];
 			for (int y = 0; y < 5; y++)
 			{
 				int current_val = get_cube_pt(x, y, z, state);
 				set_cube_pt(current_val ^ D[x][z], x, y, z, state);
 			}
 		}
-
-	for (int x = 0; x < 5; x++)
-		for (int z = 0; z < DEPTH; z++)
-		{
-			printf("%01x", D[x][z]);
-		}
-	printf("\n\n");
 }
 
 void rho()
@@ -170,16 +151,18 @@ void rho()
 
 	uint8_t temp_arr[STATE_SIZE] = {0};
 
-	for(int z = 0; z < DEPTH; z++){
+	for (int z = 0; z < DEPTH; z++)
+	{
 		int current_val = get_cube_pt(0, 0, z, state);
 		set_cube_pt(current_val, 0, 0, z, temp_arr);
 	}
 
 	for (int t = 0; t < 24; t++)
 	{
-		for (int z = 0; z < DEPTH; z++)
+		for (int z = DEPTH - 1; z >= 0; z--)
 		{
-			int current_val = get_cube_pt(x, y, (z + (t + 1) * (t + 2) / 2) % DEPTH, state);
+			int current_val = 0;
+			current_val = get_cube_pt(x, y, (z + (t + 1) * (t + 2) / 2) % DEPTH, state);
 			set_cube_pt(current_val, x, y, z, temp_arr);
 		}
 		int temp = y;
@@ -187,7 +170,8 @@ void rho()
 		x = temp;
 	}
 
-	for(int i = 0 ;  i < STATE_SIZE; i++){
+	for (int i = 0; i < STATE_SIZE; i++)
+	{
 		state[i] = temp_arr[i];
 	}
 }
@@ -199,43 +183,49 @@ void pi()
 
 	for (int x = 0; x < 5; x++)
 		for (int y = 0; y < 5; y++)
-			for (int z = 0; z < DEPTH; z++)
+			for (int z = DEPTH - 1; z >= 0; z--)
 			{
 				int current_val = get_cube_pt((x + 3 * y) % 5, x, z, state);
 				set_cube_pt(current_val, x, y, z, temp_arr);
 			}
-	
-	for(int i = 0 ;  i < STATE_SIZE; i++){
+
+	for (int i = 0; i < STATE_SIZE; i++)
+	{
 		state[i] = temp_arr[i];
 	}
 }
 
-void chi() {
+void chi()
+{
 	uint8_t temp_arr[STATE_SIZE] = {0};
 
-	for(int x = 0; x < 5; x++)
-		for(int y = 0; y < 5; y++)
-			for(int z = 0; z < DEPTH; z++){
+	for (int x = 0; x < 5; x++)
+		for (int y = 0; y < 5; y++)
+			for (int z = DEPTH - 1; z >= 0; z--)
+			{
 				int op_1 = get_cube_pt(x, y, z, state);
 				int op_2 = get_cube_pt((x + 1) % 5, y, z, state) ^ 1;
 				int op_3 = get_cube_pt((x + 2) % 5, y, z, state);
-				set_cube_pt(op_1 ^ (op_2 & op_3),x, y, z, temp_arr);
+				set_cube_pt(op_1 ^ (op_2 & op_3), x, y, z, temp_arr);
 			}
 
-	for(int i = 0 ;  i < STATE_SIZE; i++){
+	for (int i = 0; i < STATE_SIZE; i++)
+	{
 		state[i] = temp_arr[i];
 	}
 }
 
-void iota(int round) {
-	
-	for(int i = 0 ; i < 8; i++){
+void iota(int round)
+{
+
+	for (int i = 0; i < 8; i++)
+	{
 		state[i] ^= RC_TABLE[round][i];
 	}
-
 }
 
-void init(char *ptext)
+// returns the toal number of characters with padding
+int init(char *ptext)
 {
 	int ptext_len = strlen(ptext);
 
@@ -244,6 +234,10 @@ void init(char *ptext)
 	int pad_len = RATE_LEN - (ptext_len % RATE_LEN);
 
 	// pad appropriately
+	if (pad_len == 0){
+		pad_len = RATE_LEN;
+	}
+
 	if (pad_len == 1)
 	{
 		input[ptext_len] = 0x86;
@@ -253,29 +247,53 @@ void init(char *ptext)
 		input[ptext_len] = 0x06;
 		input[ptext_len + pad_len - 1] = 0x80;
 	}
+
+	return ptext_len + pad_len;
 }
 
 void get_hash(char *ptext)
 {
-	init(ptext);
+	int total_len = init(ptext);
+
+	printf("\n%d\n",total_len);
 
 	uint8_t *current_block = input;
 	uint8_t *current_block_2 = input;
 
+	// rever endian big to little
 	for (int i = 0; i < RATE_LEN / 8; i++)
 	{
 		current_block_2 = input + 8 * i;
 		reverse_endian(current_block_2);
 	}
 
-	xor_rate(current_block);
+	for(int i = 0; i < total_len / RATE_LEN; i++){
+		current_block = input + RATE_LEN * i;
 
-	theta();
-	rho();
-	pi();
-	chi();
-	iota(0);
+		xor_rate(current_block);
 
-	for (int i = 0; i < STATE_SIZE; i++)
-		printf("%02x ", state[i]);
+		for(int r = 0; r < 24; r++){
+			theta();
+			rho();
+			pi();
+			chi();
+			iota(r);
+		}
+	}
+
+	
+
+	// endian reverse little to big
+	for (int i = 0; i < RATE_LEN / 8; i++)
+	{
+		current_block_2 = state + 8 * i;
+		reverse_endian(current_block_2);
+	}
+
+	for (int i = 0; i < OUTPUT_LEN; i++)
+		printf("%02x", state[i]);
+
+
+	// for (int i = 0; i < STATE_SIZE; i++)
+	// 	printf("%02x ", state[i]);
 }
