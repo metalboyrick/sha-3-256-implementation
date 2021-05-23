@@ -267,6 +267,12 @@ int init(char *ptext)
 
 void get_hash(char *ptext)
 {
+
+	struct timespec start, end;
+
+	// start timer 
+	clock_gettime(CLOCK_REALTIME, &start);
+
 	int total_len = init(ptext);
 
 	uint8_t *current_block = input;
@@ -302,8 +308,18 @@ void get_hash(char *ptext)
 		reverse_endian(current_block_2);
 	}
 
+	// stop timer
+	clock_gettime(CLOCK_REALTIME, &end);
+
+	double time_spent = (end.tv_sec - start.tv_sec) +
+                        (end.tv_nsec - start.tv_nsec) / 1000.0;
+	double speed = ( 16000 ) / (time_spent);
+
 	for (int i = 0; i < OUTPUT_LEN; i++)
 		printf("%02x", state[i]);
+
+	// print the results
+	printf("\nHashing speed: %lf Megabits / second\n", speed);
 }
 
 void get_hash_from_random(){
