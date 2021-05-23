@@ -10,6 +10,7 @@
 
 static uint8_t state[STATE_SIZE] = {0};
 static uint8_t input[16000] = {0};
+bool random_flag = false;
 
 // RC table for iota function
 static const uint8_t RC_TABLE[24][8] = {
@@ -37,6 +38,26 @@ static const uint8_t RC_TABLE[24][8] = {
 	{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80},
 	{0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x01},
 	{0x80, 0x00, 0x00, 0x00, 0x80, 0x00, 0x80, 0x08}};
+
+
+/*
+	Function to generate alphanumeric characters
+	@params None
+	@return (uint8_t) a single random alphanumeric character
+*/
+uint8_t gen_alphanum(){
+	static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+
+    if(!random_flag){
+    	srand( (unsigned) time(NULL) * getpid());
+    	random_flag = true;
+    }
+    
+    return alphanum[rand() % (sizeof(alphanum) - 1)];
+}
 
 uint8_t get_bit_pos(int pos, uint8_t *arr)
 {
@@ -101,10 +122,6 @@ void xor_rate(uint8_t *current_block)
 	}
 }
 
-/*
-	Function to perform the f-scramble
-
-*/
 void theta()
 {
 
@@ -288,3 +305,20 @@ void get_hash(char *ptext)
 	for (int i = 0; i < OUTPUT_LEN; i++)
 		printf("%02x", state[i]);
 }
+
+void get_hash_from_random(){
+	char ptext[201];
+	printf("GENERATED TEXT: ");
+	for (int i = 0; i < 200; i++){
+		ptext[i] = gen_alphanum();
+		printf("%c", ptext[i]);
+	} 
+
+	ptext[200] = '\0';
+
+	printf("\n===========================\nSHA-3-256 HASH: ");
+	get_hash(ptext);
+
+	
+}
+
