@@ -130,11 +130,11 @@ void theta()
 	// populate D
 	for (int x = 0; x < 5; x++)
 		for (int z = 0; z < DEPTH; z++)
-		{	
+		{
 
 			if (x == 0)
 				D[x][z] = C[4][z] ^ C[(x + 1) % 5][(z + 1) % DEPTH];
-			else 
+			else
 				D[x][z] = C[(x - 1) % 5][z] ^ C[(x + 1) % 5][(z + 1) % DEPTH];
 			for (int y = 0; y < 5; y++)
 			{
@@ -234,9 +234,6 @@ int init(char *ptext)
 	int pad_len = RATE_LEN - (ptext_len % RATE_LEN);
 
 	// pad appropriately
-	if (pad_len == 0){
-		pad_len = RATE_LEN;
-	}
 
 	if (pad_len == 1)
 	{
@@ -255,24 +252,24 @@ void get_hash(char *ptext)
 {
 	int total_len = init(ptext);
 
-	printf("\n%d\n",total_len);
-
 	uint8_t *current_block = input;
 	uint8_t *current_block_2 = input;
 
 	// rever endian big to little
-	for (int i = 0; i < RATE_LEN / 8; i++)
+	for (int i = 0; i < total_len; i++)
 	{
 		current_block_2 = input + 8 * i;
 		reverse_endian(current_block_2);
 	}
 
-	for(int i = 0; i < total_len / RATE_LEN; i++){
+	for (int i = 0; i < total_len / RATE_LEN; i++)
+	{
 		current_block = input + RATE_LEN * i;
 
 		xor_rate(current_block);
 
-		for(int r = 0; r < 24; r++){
+		for (int r = 0; r < 24; r++)
+		{
 			theta();
 			rho();
 			pi();
@@ -280,8 +277,6 @@ void get_hash(char *ptext)
 			iota(r);
 		}
 	}
-
-	
 
 	// endian reverse little to big
 	for (int i = 0; i < RATE_LEN / 8; i++)
@@ -292,8 +287,4 @@ void get_hash(char *ptext)
 
 	for (int i = 0; i < OUTPUT_LEN; i++)
 		printf("%02x", state[i]);
-
-
-	// for (int i = 0; i < STATE_SIZE; i++)
-	// 	printf("%02x ", state[i]);
 }
