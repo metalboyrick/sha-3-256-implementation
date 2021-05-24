@@ -1,14 +1,14 @@
 make_sha: main.o sha.o
-	gcc -O -g main.o sha.o -o main.out
+	gcc main.o sha.o -o main.out
 
 windows: main.o sha.o
-	gcc -O -g main.o sha.o -o main.exe
+	gcc main.o sha.o -o main.exe
 
 main.o: main.c
-	gcc -O -g -c main.c
+	gcc -c main.c
 
 sha.o: sha.h sha.c 
-	gcc -O -g -c sha.c
+	gcc -c sha.c
 
 clean:
 	rm -f *.out

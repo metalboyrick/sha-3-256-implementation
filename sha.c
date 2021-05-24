@@ -10,6 +10,7 @@
 
 static uint8_t state[STATE_SIZE] = {0};
 static uint8_t input[16000] = {0};
+static uint8_t temp_arr[STATE_SIZE] = {0};
 bool random_flag = false;
 
 // RC table for iota function
@@ -63,7 +64,7 @@ uint8_t get_bit_pos(int pos, uint8_t *arr)
 {
 	int arr_val = arr[pos / 8];
 	int bit_pos = pos % 8;
-	return (uint8_t)(((arr_val << bit_pos) & 0x80) >> 7);
+	return (uint8_t)(((arr_val << bit_pos) & 0x80) == 0x80);
 }
 
 void set_bit_pos(int val, int pos, uint8_t *arr)
@@ -128,13 +129,6 @@ void theta()
 	int C[5][DEPTH];
 	int D[5][DEPTH];
 
-	for (int x = 0; x < 5; x++)
-		for (int z = 0; z < DEPTH; z++)
-		{
-			C[x][z] = BLANK;
-			D[x][z] = BLANK;
-		}
-
 	// populate C
 	for (int x = 0; x < 5; x++)
 		for (int z = 0; z < DEPTH; z++)
@@ -165,8 +159,7 @@ void rho()
 {
 	int x = 1;
 	int y = 0;
-
-	uint8_t temp_arr[STATE_SIZE] = {0};
+	
 
 	for (int z = 0; z < DEPTH; z++)
 	{
@@ -196,7 +189,7 @@ void rho()
 void pi()
 {
 
-	uint8_t temp_arr[STATE_SIZE] = {0};
+	
 
 	for (int x = 0; x < 5; x++)
 		for (int y = 0; y < 5; y++)
@@ -214,7 +207,7 @@ void pi()
 
 void chi()
 {
-	uint8_t temp_arr[STATE_SIZE] = {0};
+	
 
 	for (int x = 0; x < 5; x++)
 		for (int y = 0; y < 5; y++)
